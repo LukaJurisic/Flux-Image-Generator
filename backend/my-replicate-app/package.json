@@ -1,0 +1,20 @@
+{
+  "name": "my-replicate-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A starter for testing out Replicate's API",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "replicate": "^0.25.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

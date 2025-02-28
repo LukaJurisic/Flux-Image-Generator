@@ -15,11 +15,61 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Home() {
+  const [prompt, setPrompt] = useState("");
   const [quality, setQuality] = useState(50);
   const [promptStrength, setPromptStrength] = useState(0.5);
   const [aspectRatio, setAspectRatio] = useState("16:9");
   const [imageFormat, setImageFormat] = useState("png");
   const [safetyCheckDisabled, setSafetyCheckDisabled] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleGenerateImage = async () => {
+    if (!prompt.trim()) {
+      setError("Please enter a prompt");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('http://localhost:4000/api/generate-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          quality,
+          promptStrength,
+          aspectRatio,
+          imageFormat,
+          safetyCheckDisabled
+        }),
+      }).catch(err => {
+        throw new Error(`Connection failed: ${err.message}`);
+      });
+
+      if (!response) {
+        throw new Error('No response from server');
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate image');
+      }
+
+      setGeneratedImages(data.images);
+    } catch (err) {
+      console.error('Error details:', err);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
@@ -31,6 +81,8 @@ export default function Home() {
           <Textarea 
             placeholder="Enter Your Prompt"
             className="bg-gray-900 border-gray-800 text-white placeholder:text-gray-400"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
           />
           <div className="mt-6">
             <label className="block mb-2 text-sm font-medium text-gray-300">Aspect Ratio</label>
@@ -110,6 +162,45 @@ export default function Home() {
               Disable Safety Check
             </label>
           </div>
+          
+          <div className="mt-8">
+            <Button 
+              onClick={handleGenerateImage} 
+              disabled={isLoading}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3"
+            >
+              {isLoading ? "Generating..." : "Generate Image"}
+            </Button>
+          </div>
+          
+          {generatedImages.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold mb-4">Generated Images</h2>
+              <div className="grid gap-4">
+                {generatedImages.map((imageUrl, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={imageUrl}
+                      alt={`Generated image ${index + 1}`}
+                      className="rounded-lg shadow-lg w-full"
+                    />
+                    <button
+                      onClick={() => window.open(imageUrl)}
+                      className="absolute top-2 right-2 bg-black/50 text-white px-4 py-2 rounded hover:bg-black/70"
+                    >
+                      Download
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {error && (
+            <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
+              {error}
+            </div>
+          )}
         </div>
       </main>
     </div>
